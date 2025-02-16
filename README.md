@@ -2,7 +2,7 @@
 
 [palindrome-bot.bsky.social](https://bsky.app/profile/palindrome-bot.bsky.social)
 
-A Bluesky bot that processes the firehose for bsky.social and checks whether new posts are palindromes.
+A Bluesky bot that processes the firehose for [bsky.social](https://bsky.social/about) and checks whether new posts are palindromes.
 
 If a palindrome is found it will post the word to its account, along with a link to the original post.
 

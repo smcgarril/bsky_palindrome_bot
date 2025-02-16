@@ -24,6 +24,8 @@ func main() {
 	apikey := os.Getenv("APIKEY")
 	server := "https://bsky.social"
 
+	slog.Info("Starting firehose", "server", server, "handle", handle)
+
 	go func() {
 		http.HandleFunc("/health", api.HealthCheck)
 		slog.Info("Starting health check server on :8080")

@@ -9,8 +9,8 @@ primary_region = 'iad'
 [build]
 
 [env]
-  APIKEY = 'bsky-palindrome-bot-apikey'
-  HANDLE = 'bsky-palindrome-bot-handle'
+  APIKEY = ''
+  HANDLE = ''
   PORT = '8080'
 
 [http_service]
@@ -18,7 +18,7 @@ primary_region = 'iad'
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
-  min_machines_running = 0
+  min_machines_running = 1
   processes = ['app']
 
 [[services]]
@@ -46,3 +46,4 @@ primary_region = 'iad'
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 2
+

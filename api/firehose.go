@@ -23,6 +23,10 @@ import (
 
 const firehoseURI = "wss://bsky.network/xrpc/com.atproto.sync.subscribeRepos"
 
+func HealthCheck(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+}
+
 func StartFirehose(ctx context.Context, server, handle, apikey string) error {
 	// Connect to the WebSocket
 	con, _, err := websocket.DefaultDialer.Dial(firehoseURI, http.Header{})

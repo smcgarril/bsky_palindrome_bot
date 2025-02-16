@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"log"
 	"log/slog"
+	"net/http"
 	"os"
 
 	api "github.com/smcgarril/bsky_palindrome_bot/api"
@@ -21,6 +23,15 @@ func main() {
 	handle := os.Getenv("HANDLE")
 	apikey := os.Getenv("APIKEY")
 	server := "https://bsky.social"
+
+	go func() {
+		http.HandleFunc("/health", api.HealthCheck)
+		slog.Info("Starting health check server on :8080")
+
+		if err := http.ListenAndServe(":8080", nil); err != nil {
+			log.Fatal("Failed to start health check server:", err)
+		}
+	}()
 
 	ctx := context.Background()
 	if err := api.StartFirehose(ctx, server, handle, apikey); err != nil {

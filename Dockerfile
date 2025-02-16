@@ -1,4 +1,8 @@
-FROM golang:1.23 AS builder
+ARG GO_VERSION=1
+FROM golang:${GO_VERSION}-bookworm as builder
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -9,10 +13,13 @@ COPY . .
 
 RUN go build -o palindrome ./cmd/main.go
 
-FROM debian:bullseye-slim
+FROM golang:1.23
+
+COPY --from=builder /etc/ssl/certs /etc/ssl/certs
+COPY --from=builder /app/palindrome /app/palindrome
+
+EXPOSE 8080
 
 WORKDIR /app
-
-COPY --from=builder /app/palindrome /app/palindrome
 
 CMD ["/app/palindrome"]

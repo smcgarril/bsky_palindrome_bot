@@ -1,29 +1,48 @@
-app = "bsky_palindrome_bot" 
+# fly.toml app configuration file generated for bsky-palindrome-bot-blue-leaf-6455 on 2025-02-16T17:39:38-05:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'bsky-palindrome-bot-blue-leaf-6455'
+primary_region = 'iad'
 
 [build]
 
 [env]
-  PORT = "8080"
-  HANDLE = "bsky_palindrome_bot_handle" 
-  APIKEY = "bsky_palindrome_bot_apikey" 
+  APIKEY = 'bsky-palindrome-bot-apikey'
+  HANDLE = 'bsky-palindrome-bot-handle'
+  PORT = '8080'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
 
 [[services]]
+  protocol = 'tcp'
   internal_port = 8080
-  protocol = "tcp"
 
   [[services.ports]]
-    handlers = ["tls", "http"]
     port = 80
+    handlers = ['tls', 'http']
 
   [[services.ports]]
-    handlers = ["tls"]
     port = 443
+    handlers = ['tls']
 
   [services.concurrency]
-    type = "connections"
+    type = 'connections'
     hard_limit = 250
     soft_limit = 200
 
   [[services.tcp_checks]]
-    interval = "10s"
-    timeout = "2s"
+    interval = '10s'
+    timeout = '2s'
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 2

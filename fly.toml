@@ -1,0 +1,29 @@
+app = "bsky_palindrome_bot" 
+
+[build]
+
+[env]
+  PORT = "8080"
+  HANDLE = "bsky_palindrome_bot_handle" 
+  APIKEY = "bsky_palindrome_bot_apikey" 
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls"]
+    port = 443
+
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 250
+    soft_limit = 200
+
+  [[services.tcp_checks]]
+    interval = "10s"
+    timeout = "2s"

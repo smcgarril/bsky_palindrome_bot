@@ -6,7 +6,7 @@ import (
 )
 
 // Regex to detect repetitive laughter patterns (strictly repeated units)
-var laughRegex = regexp.MustCompile(`^(ha)+$|^(ah)+$|^(he)+$|^(eh)+$|^(ho)+$|^(oh)+$|^(hi)+$|^(ih)+$|^(hu)+$|^(uh)+$|^(ja)+$|^(aj)+$|^(je)+$|^(ej)+$|^(ji)+$|^(ij)+$|^(jo)+$|^(oj)+$|^(ju)+$|^(uj)+$|^(lo)+$|^(ol)+$|^(le)+$|^(el)+$|^(lmao)+$|^(rofl)+$`)
+var laughRegex = regexp.MustCompile(`^(ha)+$|^(ha)+[h]+$|^(ah)+$|^(ah)+[a]+$|^(he)+$|^(he)+[h]+$|^(eh)+$|^(eh)+[e]+$|^(ho)+$|^(ho)+[h]+$|^(oh)+$|^(oh)+[o]+$|^(hi)+$|^(hi)+[h]+$|^(ih)+$|^(ih)+[i]+$|^(hu)+$|^(hu)+[h]+$|^(uh)+$|^(uh)+[u]+$|^(ja)+$|^(ja)+[j]+$|^(aj)+$|^(aj)+[a]+$|^(je)+$|^(je)+[j]+$|^(ej)+$|^(ej)+[e]+$|^(ji)+$|^(ji)+[j]+$|^(ij)+$|^(ij)+[i]+$|^(jo)+$|^(jo)+[j]+$|^(oj)+$|^(oj)+[o]+$|^(ju)+$|^(ju)+[j]+$|^(uj)+$|^(uj)+[u]+$|^(lo)+$|^(lo)+[l]+$|^(ol)+$|^(ol)+[o]+$|^(le)+$|^(le)+[l]+$|^(el)+$|^(el)+[e]+$|^(lmao)+$|^(rofl)+$|^(wo)+$|^(wo)+[w]+$|^(ow)+$|^(ow)+[o]+$`)
 
 func Palindrome(s string) bool {
 	var cleaned []rune

@@ -6,7 +6,9 @@ import (
 )
 
 // Regex to detect repetitive laughter patterns (strictly repeated units)
-var laughRegex = regexp.MustCompile(`^(ha)+$|^(ha)+[h]+$|^(ah)+$|^(ah)+[a]+$|^(he)+$|^(he)+[h]+$|^(eh)+$|^(eh)+[e]+$|^(ho)+$|^(ho)+[h]+$|^(oh)+$|^(oh)+[o]+$|^(hi)+$|^(hi)+[h]+$|^(ih)+$|^(ih)+[i]+$|^(hu)+$|^(hu)+[h]+$|^(uh)+$|^(uh)+[u]+$|^(ja)+$|^(ja)+[j]+$|^(aj)+$|^(aj)+[a]+$|^(je)+$|^(je)+[j]+$|^(ej)+$|^(ej)+[e]+$|^(ji)+$|^(ji)+[j]+$|^(ij)+$|^(ij)+[i]+$|^(jo)+$|^(jo)+[j]+$|^(oj)+$|^(oj)+[o]+$|^(ju)+$|^(ju)+[j]+$|^(uj)+$|^(uj)+[u]+$|^(lo)+$|^(lo)+[l]+$|^(ol)+$|^(ol)+[o]+$|^(le)+$|^(le)+[l]+$|^(el)+$|^(el)+[e]+$|^(lmao)+$|^(rofl)+$|^(wo)+$|^(wo)+[w]+$|^(ow)+$|^(ow)+[o]+$`)
+// This is absolutely ridiculous and needs to be refactored.
+// It doesn't even work the way it's intended to.
+var laughRegex = regexp.MustCompile(`^(ha)+$|^(ha)+[h]+$|^(ah)+$|^(ah)+[a]+$|^(he)+$|^(he)+[h]+$|^(eh)+$|^(eh)+[e]+$|^(ho)+$|^(ho)+[h]+$|^(oh)+$|^(oh)+[o]+$|^(hi)+$|^(hi)+[h]+$|^(ih)+$|^(ih)+[i]+$|^(hu)+$|^(hu)+[h]+$|^(uh)+$|^(uh)+[u]+$|^(ja)+$|^(ja)+[j]+$|^(aj)+$|^(aj)+[a]+$|^(je)+$|^(je)+[j]+$|^(ej)+$|^(ej)+[e]+$|^(ji)+$|^(ji)+[j]+$|^(ij)+$|^(ij)+[i]+$|^(jo)+$|^(jo)+[j]+$|^(oj)+$|^(oj)+[o]+$|^(ju)+$|^(ju)+[j]+$|^(uj)+$|^(uj)+[u]+$|^(lo)+$|^(lo)+[l]+$|^(ol)+$|^(ol)+[o]+$|^(le)+$|^(le)+[l]+$|^(el)+$|^(el)+[e]+$|^(lmao)+$|^(rofl)+$|^(wo)+$|^(wo)+[w]+$|^(ow)+$|^(ow)+[o]+$|^(wa)+$|^(wa)+[w]+$|^(aw)+$|^(aw)+[a]+$|^(we)+$|^(we)+[w]+$|^(ew)+$|^(ew)+[e]+$|^(wi)+$|^(wi)+[w]+$|^(iw)+$|^(iw)+[i]+$|^(wo)+$|^(wo)+[w]+$|^(ow)+$|^(ow)+[o]+$|^(wu)+$|^(wu)+[w]+$|^(uw)+$|^(uw)+[u]+$|^(ya)+$|^(ya)+[y]+$|^(ay)+$|^(ay)+[a]+$|^(ye)+$|^(ye)+[y]+$|^(ey)+$|^(ey)+[e]+$|^(yi)+$|^(yi)+[y]+$|^(iy)+$|^(iy)+[i]+$|^(yo)+$|^(yo)+[y]+$|^(oy)+$|^(oy)+[o]+$|^(yu)+$|^(yu)+[y]+$|^(uy)+$|^(uy)+[u]+$|^(yay)+$`)
 
 func Palindrome(s string) bool {
 	var cleaned []rune

@@ -1,14 +1,8 @@
 package api
 
 import (
-	"regexp"
 	"unicode"
 )
-
-// Regex to detect repetitive laughter patterns (strictly repeated units)
-// This is absolutely ridiculous and needs to be refactored.
-// It doesn't even work the way it's intended to.
-var laughRegex = regexp.MustCompile(`^(ha)+$|^(ha)+[h]+$|^(ah)+$|^(ah)+[a]+$|^(he)+$|^(he)+[h]+$|^(eh)+$|^(eh)+[e]+$|^(ho)+$|^(ho)+[h]+$|^(oh)+$|^(oh)+[o]+$|^(hi)+$|^(hi)+[h]+$|^(ih)+$|^(ih)+[i]+$|^(hu)+$|^(hu)+[h]+$|^(uh)+$|^(uh)+[u]+$|^(ja)+$|^(ja)+[j]+$|^(aj)+$|^(aj)+[a]+$|^(je)+$|^(je)+[j]+$|^(ej)+$|^(ej)+[e]+$|^(ji)+$|^(ji)+[j]+$|^(ij)+$|^(ij)+[i]+$|^(jo)+$|^(jo)+[j]+$|^(oj)+$|^(oj)+[o]+$|^(ju)+$|^(ju)+[j]+$|^(uj)+$|^(uj)+[u]+$|^(lo)+$|^(lo)+[l]+$|^(ol)+$|^(ol)+[o]+$|^(le)+$|^(le)+[l]+$|^(el)+$|^(el)+[e]+$|^(lmao)+$|^(rofl)+$|^(wo)+$|^(wo)+[w]+$|^(ow)+$|^(ow)+[o]+$|^(wa)+$|^(wa)+[w]+$|^(aw)+$|^(aw)+[a]+$|^(we)+$|^(we)+[w]+$|^(ew)+$|^(ew)+[e]+$|^(wi)+$|^(wi)+[w]+$|^(iw)+$|^(iw)+[i]+$|^(wo)+$|^(wo)+[w]+$|^(ow)+$|^(ow)+[o]+$|^(wu)+$|^(wu)+[w]+$|^(uw)+$|^(uw)+[u]+$|^(ya)+$|^(ya)+[y]+$|^(ay)+$|^(ay)+[a]+$|^(ye)+$|^(ye)+[y]+$|^(ey)+$|^(ey)+[e]+$|^(yi)+$|^(yi)+[y]+$|^(iy)+$|^(iy)+[i]+$|^(yo)+$|^(yo)+[y]+$|^(oy)+$|^(oy)+[o]+$|^(yu)+$|^(yu)+[y]+$|^(uy)+$|^(uy)+[u]+$|^(yay)+$`)
 
 func Palindrome(s string) bool {
 	var cleaned []rune
@@ -18,7 +12,7 @@ func Palindrome(s string) bool {
 	// Iterate over runes, filtering out non-English characters and punctuation
 	for _, r := range s {
 		if containsEmoji(r) || !isEnglishLetter(r) {
-			return false
+			continue
 		}
 		lowerR := unicode.ToLower(r)
 		cleaned = append(cleaned, lowerR)
@@ -38,7 +32,18 @@ func Palindrome(s string) bool {
 
 	// Convert cleaned runes to a string for regex check
 	cleanedStr := string(cleaned)
-	if laughRegex.MatchString(cleanedStr) {
+	if checkTwoLetterRepetition(cleanedStr) {
+		return false
+	}
+
+	// If the string starts and ends with the same character, with a single repeated character in the middle, return false
+	if len(charSet) == 2 && cleaned[0] == cleaned[len(cleaned)-1] {
+		midChar := cleaned[1]
+		for _, r := range cleaned[2 : len(cleaned)-1] {
+			if r != midChar {
+				return true
+			}
+		}
 		return false
 	}
 
@@ -73,4 +78,35 @@ func containsEmoji(r rune) bool {
 		(r >= 0x2700 && r <= 0x27BF) || // Dingbats
 		(r >= 0xFE00 && r <= 0xFE0F) || // Variation selectors
 		(r >= 0x1FA70 && r <= 0x1FAFF) // Extended pictographic characters
+}
+
+// checkTwoLetterRepetition verifies if the string follows the alternating "XYXYXY" pattern
+func checkTwoLetterRepetition(s string) bool {
+	if len(s) < 4 {
+		return false
+	}
+
+	x, y := s[0], s[1]
+
+	matchesXY := true
+	matchesYX := true
+
+	for i := 0; i < len(s); i++ {
+		if i%2 == 0 && s[i] != x {
+			matchesXY = false
+		}
+		if i%2 == 1 && s[i] != y {
+			matchesXY = false
+		}
+
+		// Alternate pattern (shifted by one position)
+		if i%2 == 0 && s[i] != y {
+			matchesYX = false
+		}
+		if i%2 == 1 && s[i] != x {
+			matchesYX = false
+		}
+	}
+
+	return (matchesXY || matchesYX)
 }

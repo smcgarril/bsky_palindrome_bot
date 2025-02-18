@@ -41,7 +41,7 @@ func Palindrome(s string) bool {
 		midChar := cleaned[1]
 		for _, r := range cleaned[2 : len(cleaned)-1] {
 			if r != midChar {
-				return true
+				break
 			}
 		}
 		return false

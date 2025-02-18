@@ -10,6 +10,7 @@ func TestPalindrome(t *testing.T) {
 		{"racecar", true},
 		{"hello", false},
 		{"hahahaha", false},
+		{"Yayyyy", false},
 		{"", false},
 		{"ahahahah", false},
 		{"ahahaha", false},

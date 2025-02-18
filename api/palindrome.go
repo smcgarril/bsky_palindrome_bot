@@ -4,36 +4,52 @@ import (
 	"unicode"
 )
 
-func Palindrome(s string) bool {
+func Palindrome(s string) (string, bool) {
+	if len(s) < 6 {
+		return "", false
+	}
+
 	var cleaned []rune
+	var start int = -1
+	var end int = -1
 	charSet := make(map[rune]bool) // Track unique characters
 	hasLettersOrDigits := false    // Ensure at least one real letter/digit exists
 
 	// Iterate over runes, filtering out non-English characters and punctuation
-	for _, r := range s {
+	for i, r := range s {
 		if containsEmoji(r) || !isEnglishLetter(r) {
 			continue
 		}
 		lowerR := unicode.ToLower(r)
+		if start == -1 {
+			start = i // Mark first valid character
+		}
+		end = i
 		cleaned = append(cleaned, lowerR)
 		charSet[lowerR] = true
 		hasLettersOrDigits = true
 	}
 
+	if start == -1 {
+		return "", false
+	}
+
+	original := []rune(s[start : end+1])
+
 	// If all characters are the same, return false
 	if len(charSet) == 1 {
-		return false
+		return "", false
 	}
 
 	// Ensure we have at least one valid letter or digit
 	if !hasLettersOrDigits {
-		return false
+		return "", false
 	}
 
 	// Convert cleaned runes to a string for regex check
 	cleanedStr := string(cleaned)
 	if checkTwoLetterRepetition(cleanedStr) {
-		return false
+		return "", false
 	}
 
 	// If the string starts and ends with the same character, with a single repeated character in the middle, return false
@@ -44,20 +60,25 @@ func Palindrome(s string) bool {
 				break
 			}
 		}
-		return false
+		return "", false
+	}
+
+	// If the string is too short, return false
+	if len(cleaned) < 6 {
+		return "", false
 	}
 
 	// Check palindrome property
 	a, b := 0, len(cleaned)-1
 	for a < b {
 		if cleaned[a] != cleaned[b] {
-			return false
+			return "", false
 		}
 		a++
 		b--
 	}
 
-	return true
+	return string(original), true
 }
 
 // Only allow English letters

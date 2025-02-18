@@ -11,7 +11,7 @@ import (
 	"os"
 
 	"github.com/bluesky-social/indigo/api/atproto"
-	appbsky "github.com/bluesky-social/indigo/api/bsky"
+	apibsky "github.com/bluesky-social/indigo/api/bsky"
 	"github.com/bluesky-social/indigo/events"
 	"github.com/bluesky-social/indigo/events/schedulers/sequential"
 	lexutil "github.com/bluesky-social/indigo/lex/util"
@@ -82,7 +82,7 @@ func processRecord(ctx context.Context, rr repo.Repo, evt *atproto.SyncSubscribe
 	}
 
 	lex := lexutil.LexiconTypeDecoder{Val: rec}
-	var pst appbsky.FeedPost
+	var pst apibsky.FeedPost
 
 	b, err := lex.MarshalJSON()
 	if err != nil {
@@ -95,27 +95,30 @@ func processRecord(ctx context.Context, rr repo.Repo, evt *atproto.SyncSubscribe
 	}
 
 	if pst.LexiconTypeID == "app.bsky.feed.post" && len(pst.Langs) > 0 && pst.Langs[0] == "en" {
-		if len(pst.Text) > 5 && Palindrome(pst.Text) {
-			slog.Info("Palindrome found", "text", pst.Text)
+		if len(pst.Text) > 5 {
+			if palindrome, ok := Palindrome(pst.Text); ok {
+				slog.Info("Palindrome found", "text", palindrome)
 
-			authorDID := evt.Repo
-			postID := ExtractPostID(op.Path)
+				authorDID := evt.Repo
+				postID := ExtractPostID(op.Path)
 
-			authorHandle, err := GetAuthorHandle(authorDID)
-			if err != nil {
-				slog.Error("Error fetching handle for DID", "error", err)
-				authorHandle = authorDID
+				authorHandle, err := GetAuthorHandle(authorDID)
+				if err != nil {
+					slog.Error("Error fetching handle for DID", "error", err)
+					authorHandle = authorDID
+				}
+
+				postLink := fmt.Sprintf("https://bsky.app/profile/%s/post/%s", authorHandle, postID)
+
+				slog.Info("Post by", "handle", authorHandle, "did", authorDID)
+				slog.Info("Post link", "link", postLink)
+
+				err = Post(ctx, palindrome, server, handle, authorHandle, authorDID, postID, apikey)
+				if err != nil {
+					slog.Error("Error posting palindrome", "error", err)
+				}
 			}
 
-			postLink := fmt.Sprintf("https://bsky.app/profile/%s/post/%s", authorHandle, postID)
-
-			slog.Info("Post by", "handle", authorHandle, "did", authorDID)
-			slog.Info("Post link", "link", postLink)
-
-			err = Post(ctx, pst.Text, server, handle, authorHandle, authorDID, postID, apikey)
-			if err != nil {
-				slog.Error("Error posting palindrome", "error", err)
-			}
 		}
 	}
 	return nil

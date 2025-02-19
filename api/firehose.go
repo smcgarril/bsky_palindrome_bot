@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
+	"time"
 
 	"log/slog"
 	"os"
@@ -23,11 +25,33 @@ import (
 
 const firehoseURI = "wss://bsky.network/xrpc/com.atproto.sync.subscribeRepos"
 
+type Record struct {
+	ctx    context.Context
+	rr     *repo.Repo
+	evt    *atproto.SyncSubscribeRepos_Commit
+	op     *atproto.SyncSubscribeRepos_RepoOp
+	server string
+	handle string
+	apikey string
+}
+
 func HealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func StartFirehose(ctx context.Context, server, handle, apikey string) error {
+func Worker(id int, jobs <-chan Record, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for j := range jobs {
+		events := len(jobs)
+		if events > 50 {
+			slog.Info("Worker", "id", id, "processing\n", j, "Number of events:", events)
+		}
+		time.Sleep(10 * time.Millisecond)
+		// slog.Info("Worker", "id", id, "processing", j)
+	}
+}
+
+func StartFirehose(ctx context.Context, eventQueue chan Record, fallBackQueue chan Record, server, handle, apikey string) error {
 	// Connect to the WebSocket
 	con, _, err := websocket.DefaultDialer.Dial(firehoseURI, http.Header{})
 	if err != nil {
@@ -37,7 +61,7 @@ func StartFirehose(ctx context.Context, server, handle, apikey string) error {
 
 	rsc := &events.RepoStreamCallbacks{
 		RepoCommit: func(evt *atproto.SyncSubscribeRepos_Commit) error {
-			return handleRepoCommit(ctx, evt, server, handle, apikey)
+			return handleRepoCommit(ctx, eventQueue, fallBackQueue, evt, server, handle, apikey)
 		},
 	}
 
@@ -48,7 +72,7 @@ func StartFirehose(ctx context.Context, server, handle, apikey string) error {
 	return nil
 }
 
-func handleRepoCommit(ctx context.Context, evt *atproto.SyncSubscribeRepos_Commit, server, handle, apikey string) error {
+func handleRepoCommit(ctx context.Context, eventQueue chan Record, fallBackQueue chan Record, evt *atproto.SyncSubscribeRepos_Commit, server, handle, apikey string) error {
 	rr, err := repo.ReadRepoFromCar(ctx, bytes.NewReader(evt.Blocks))
 	if err != nil {
 		slog.Error("Error reading repor", "error", err)
@@ -57,10 +81,26 @@ func handleRepoCommit(ctx context.Context, evt *atproto.SyncSubscribeRepos_Commi
 
 	for _, op := range evt.Ops {
 		if isCreateOrUpdate(op.Action) {
-			err := processRecord(ctx, *rr, evt, op, server, handle, apikey)
-			if err != nil {
-				slog.Warn("Error processing record", "error", err)
+			record := Record{ctx, rr, evt, op, server, handle, apikey}
+
+			select {
+			case eventQueue <- record:
+				slog.Info("Queue lengths", "Primary queue", len(eventQueue), "Fallback queue", len(fallBackQueue))
+			default:
+				// slog.Warn("Primary queue full. Record sent to fallback queue", "", record)
+				select {
+				case fallBackQueue <- record:
+					// slog.Info("Queue lengths", "Primary queue", len(eventQueue), "Fallback queue", len(fallBackQueue))
+					// slog.Info("Record enqueued to fallback queue", "", record)
+				default:
+					slog.Error("Fallback queue also full. Dropping record", "", record)
+				}
 			}
+
+			// err := processRecord(ctx, *rr, evt, op, server, handle, apikey)
+			// if err != nil {
+			// 	slog.Warn("Error processing record", "error", err)
+			// }
 		}
 	}
 	return nil
@@ -122,4 +162,33 @@ func processRecord(ctx context.Context, rr repo.Repo, evt *atproto.SyncSubscribe
 		}
 	}
 	return nil
+}
+
+func ProcessFallbackQueue(eventQueue chan Record, fallBackQueue chan Record) {
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		// slog.Info("Queue lengths", "Primary queue", len(eventQueue), "Fallback queue", len(fallBackQueue))
+		for {
+			select {
+			case record := <-fallBackQueue:
+				select {
+				case eventQueue <- record:
+					// slog.Info("Moved fallback record back to primary queue", "", record)
+				default:
+					// slog.Warn("Primary queue still full. Record remains in fallback queue", "", record)
+					break
+				}
+			default:
+				break
+			}
+
+			if len(fallBackQueue) == 0 {
+				// slog.Info("Fallback queue is empty!", "", "")
+				break
+			}
+
+		}
+	}
 }

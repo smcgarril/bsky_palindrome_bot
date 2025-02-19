@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"sync"
 
 	api "github.com/smcgarril/bsky_palindrome_bot/api"
 
@@ -35,8 +36,30 @@ func main() {
 		}
 	}()
 
-	ctx := context.Background()
-	if err := api.StartFirehose(ctx, server, handle, apikey); err != nil {
-		slog.Error("Firehose encountered an error", "error", err)
+	eventQueue := make(chan api.Record, 10)
+	fallBackQueue := make(chan api.Record, 100)
+
+	var wg sync.WaitGroup
+	numWorkers := 5
+
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go api.Worker(i, eventQueue, &wg)
 	}
+
+	go api.ProcessFallbackQueue(eventQueue, fallBackQueue)
+
+	go func() {
+		ctx := context.Background()
+		if err := api.StartFirehose(ctx, eventQueue, fallBackQueue, server, handle, apikey); err != nil {
+			slog.Error("Firehose encountered an error", "error", err)
+		}
+		close(eventQueue)
+	}()
+
+	wg.Wait()
+
+	close(fallBackQueue)
+
+	slog.Info("Application stopped")
 }

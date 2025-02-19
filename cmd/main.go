@@ -2,11 +2,13 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"log/slog"
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	api "github.com/smcgarril/bsky_palindrome_bot/api"
 
@@ -14,6 +16,17 @@ import (
 )
 
 func main() {
+	// Benchmark testing
+	benchMode := flag.Bool("bench", false, "Run benchmark instead of main application")
+	flag.Parse()
+
+	if *benchMode {
+		slog.Info("Running benchmark mode")
+		api.RunBenchmark()
+		return
+	}
+
+	// Production mode
 	slog.Info("Starting application")
 
 	err := godotenv.Load()
@@ -49,6 +62,10 @@ func main() {
 
 	go api.ProcessFallbackQueue(eventQueue, fallBackQueue)
 
+	start := time.Now()
+	// FIGURE OUT HOW TO SEND THIS BACK FROM WORKER POOL
+	recordCount := 0
+
 	go func() {
 		ctx := context.Background()
 		if err := api.StartFirehose(ctx, eventQueue, fallBackQueue, server, handle, apikey); err != nil {
@@ -60,6 +77,9 @@ func main() {
 	wg.Wait()
 
 	close(fallBackQueue)
+
+	recordRate := recordCount / int(time.Since(start))
+	slog.Info("Average records per second", "", recordRate)
 
 	slog.Info("Application stopped")
 }

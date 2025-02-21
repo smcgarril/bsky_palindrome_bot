@@ -5,7 +5,7 @@ import (
 )
 
 func Palindrome(s string) (string, bool) {
-	if len(s) < 6 {
+	if len(s) < 7 {
 		return "", false
 	}
 
@@ -49,6 +49,11 @@ func Palindrome(s string) (string, bool) {
 	// Convert cleaned runes to a string for regex check
 	cleanedStr := string(cleaned)
 	if checkTwoLetterRepetition(cleanedStr) {
+		return "", false
+	}
+
+	// Check for more than 2 of the same letter in a row
+	if checkRepeats(cleanedStr) {
 		return "", false
 	}
 
@@ -130,4 +135,20 @@ func checkTwoLetterRepetition(s string) bool {
 	}
 
 	return (matchesXY || matchesYX)
+}
+
+// check for more than 2 of a single character in a row
+func checkRepeats(s string) bool {
+	l := 0
+
+	for i := range len(s) {
+		if i > l+2 {
+			return true
+		}
+		if s[l] != s[i] {
+			l = i
+		}
+	}
+
+	return false
 }

@@ -145,7 +145,7 @@ func processRecord(record Record) error {
 	}
 
 	if pst.LexiconTypeID == "app.bsky.feed.post" && len(pst.Langs) > 0 && pst.Langs[0] == "en" {
-		if len(pst.Text) > 5 {
+		if len(pst.Text) > 6 {
 			if palindrome, ok := Palindrome(pst.Text); ok {
 				slog.Info("Palindrome found", "text", palindrome)
 

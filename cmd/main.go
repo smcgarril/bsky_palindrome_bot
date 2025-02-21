@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
@@ -12,10 +13,37 @@ import (
 	"github.com/joho/godotenv"
 )
 
+func setupLogging() (*os.File, error) {
+	// Open the log file for writing (create if it doesn't exist, append if it does)
+	logFile, err := os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return nil, err
+	}
+
+	// Create a multi-writer (console + log file)
+	multiWriter := io.MultiWriter(os.Stdout, logFile)
+
+	// Set up the slog handler
+	handler := slog.NewTextHandler(multiWriter, nil)
+	logger := slog.New(handler)
+
+	// Set the default logger
+	slog.SetDefault(logger)
+
+	return logFile, nil
+}
+
 func main() {
+	logFile, err := setupLogging()
+	if err != nil {
+		slog.Error("Failed to set up logging", "error", err)
+		return
+	}
+	defer logFile.Close()
+
 	slog.Info("Starting application")
 
-	err := godotenv.Load()
+	err = godotenv.Load()
 	if err != nil {
 		slog.Warn("Warning: No .env file found")
 	}

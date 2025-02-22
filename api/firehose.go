@@ -41,21 +41,21 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 
 func Worker(id int, records <-chan Record, wg *sync.WaitGroup) {
 	defer wg.Done()
-	// for record := range records {
-	for range records {
+	for record := range records {
+		// for range records {
 		// Comment this out for production
 		// events := len(records)
 		// if events > 50 {
 		// 	slog.Info("Worker", "id", id, "processing\n", record, "Number of events:", events)
 		// }
-		time.Sleep(10 * time.Millisecond)
+		// time.Sleep(10 * time.Millisecond)
 		// slog.Info("Worker", "id", id, "processing", j)
 
 		// // actual processing
-		// err := processRecord(record) // <-- need to pass Record
-		// if err != nil {
-		// 	slog.Warn("Error processing record", "error", err)
-		// }
+		err := processRecord(record) // <-- need to pass Record
+		if err != nil {
+			slog.Warn("Error processing record", "error", err)
+		}
 
 	}
 }
@@ -94,22 +94,22 @@ func handleRepoCommit(ctx context.Context, eventQueue chan Record, fallBackQueue
 
 			select {
 			case eventQueue <- record:
-				slog.Info("Queue lengths", "Primary queue", len(eventQueue), "Fallback queue", len(fallBackQueue))
+				// slog.Info("Queue lengths", "Primary queue", len(eventQueue), "Fallback queue", len(fallBackQueue))
 			default:
 				// slog.Warn("Primary queue full. Record sent to fallback queue", "", record)
 				select {
 				case fallBackQueue <- record:
 					// slog.Info("Queue lengths", "Primary queue", len(eventQueue), "Fallback queue", len(fallBackQueue))
-					// slog.Info("Record enqueued to fallback queue", "", record)
+					slog.Warn("Record enqueued to fallback queue", "", record)
 				default:
 					slog.Error("Fallback queue also full. Dropping record", "", record)
 				}
 			}
 
-			// err := processRecord(ctx, *rr, evt, op, server, handle, apikey)
-			// if err != nil {
-			// 	slog.Warn("Error processing record", "error", err)
-			// }
+			err := processRecord(record)
+			if err != nil {
+				slog.Warn("Error processing record", "error", err)
+			}
 		}
 	}
 	return nil
@@ -193,12 +193,6 @@ func ProcessFallbackQueue(eventQueue chan Record, fallBackQueue chan Record) {
 			default:
 				break
 			}
-
-			if len(fallBackQueue) == 0 {
-				// slog.Info("Fallback queue is empty!", "", "")
-				break
-			}
-
 		}
 	}
 }

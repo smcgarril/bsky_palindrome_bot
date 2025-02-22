@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"sync"
-	"time"
 
 	api "github.com/smcgarril/bsky_palindrome_bot/api"
 
@@ -17,7 +16,7 @@ import (
 
 func main() {
 	// Benchmark testing
-	benchMode := flag.Bool("bench", false, "Run benchmark instead of main application")
+	benchMode := flag.Bool("bench", false, "Run benchmark tests instead of main application")
 	flag.Parse()
 
 	if *benchMode {
@@ -49,11 +48,11 @@ func main() {
 		}
 	}()
 
-	eventQueue := make(chan api.Record, 10)
+	eventQueue := make(chan api.Record, 100)
 	fallBackQueue := make(chan api.Record, 100)
 
 	var wg sync.WaitGroup
-	numWorkers := 5
+	numWorkers := 4
 
 	for i := 0; i < numWorkers; i++ {
 		wg.Add(1)
@@ -61,10 +60,6 @@ func main() {
 	}
 
 	go api.ProcessFallbackQueue(eventQueue, fallBackQueue)
-
-	start := time.Now()
-	// FIGURE OUT HOW TO SEND THIS BACK FROM WORKER POOL
-	recordCount := 0
 
 	go func() {
 		ctx := context.Background()
@@ -77,9 +72,6 @@ func main() {
 	wg.Wait()
 
 	close(fallBackQueue)
-
-	recordRate := recordCount / int(time.Since(start))
-	slog.Info("Average records per second", "", recordRate)
 
 	slog.Info("Application stopped")
 }

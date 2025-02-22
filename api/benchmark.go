@@ -14,11 +14,14 @@ type Event struct {
 func RunBenchmark() {
 	rand.Seed(time.Now().UnixNano())
 
-	numEvents := 1000
+	numEvents := 10000
 
-	primaryBufferSizes := []int{100, 1000}
-	fallbackBufferSizes := []int{100, 1000, 5000}
-	numWorkersList := []int{1, 2, 4, 8, 16}
+	// primaryBufferSizes := []int{100, 1000}
+	// fallbackBufferSizes := []int{100, 1000, 5000}
+	// numWorkersList := []int{1, 2, 4, 8, 16}
+	primaryBufferSizes := []int{100, 500}
+	fallbackBufferSizes := []int{100, 500}
+	numWorkersList := []int{2, 4, 8, 16}
 
 	slog.Info("Starting benchmark...")
 

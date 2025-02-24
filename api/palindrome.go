@@ -46,6 +46,7 @@ func Palindrome(validator *WordSegmentValidator, s string) (string, []string, bo
 	if len(charSet) == 1 {
 		return "", nil, false
 	}
+
 	// Ensure we have at least one valid letter or digit
 	if !hasLettersOrDigits {
 		return "", nil, false

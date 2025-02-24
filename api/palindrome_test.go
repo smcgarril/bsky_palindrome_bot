@@ -24,6 +24,7 @@ func TestPalindrome(t *testing.T) {
 		{"LOOOOOOOOL", "", false},
 		{"xxxxanaxxxx", "", false},
 		{"xxanaxx", "xxanaxx", true},
+		{"pull up", "", false},
 	}
 
 	for _, tt := range tests {

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -31,12 +30,22 @@ func main() {
 		slog.Info("Starting health check server on :8080")
 
 		if err := http.ListenAndServe(":8080", nil); err != nil {
-			log.Fatal("Failed to start health check server:", err)
+			slog.Error("Failed to start health check server", "error", err)
+			os.Exit(1)
 		}
 	}()
 
+	dictPath := "/usr/share/dict/words" // Or use a custom wordlist
+	dictionary, err := api.LoadDictionary(dictPath)
+	if err != nil {
+		slog.Error("Failed to load dictionary:", "error", err)
+		os.Exit(1)
+	}
+
+	validator := api.NewWordSegmentValidator(dictionary)
+
 	ctx := context.Background()
-	if err := api.StartFirehose(ctx, server, handle, apikey); err != nil {
+	if err := api.StartFirehose(ctx, validator, server, handle, apikey); err != nil {
 		slog.Error("Firehose encountered an error", "error", err)
 	}
 }

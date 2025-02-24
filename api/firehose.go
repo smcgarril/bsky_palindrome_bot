@@ -1,11 +1,13 @@
 package api
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"log/slog"
 	"os"
@@ -27,7 +29,7 @@ func HealthCheck(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func StartFirehose(ctx context.Context, server, handle, apikey string) error {
+func StartFirehose(ctx context.Context, validator *WordSegmentValidator, server, handle, apikey string) error {
 	// Connect to the WebSocket
 	con, _, err := websocket.DefaultDialer.Dial(firehoseURI, http.Header{})
 	if err != nil {
@@ -37,7 +39,7 @@ func StartFirehose(ctx context.Context, server, handle, apikey string) error {
 
 	rsc := &events.RepoStreamCallbacks{
 		RepoCommit: func(evt *atproto.SyncSubscribeRepos_Commit) error {
-			return handleRepoCommit(ctx, evt, server, handle, apikey)
+			return handleRepoCommit(ctx, evt, validator, server, handle, apikey)
 		},
 	}
 
@@ -48,7 +50,7 @@ func StartFirehose(ctx context.Context, server, handle, apikey string) error {
 	return nil
 }
 
-func handleRepoCommit(ctx context.Context, evt *atproto.SyncSubscribeRepos_Commit, server, handle, apikey string) error {
+func handleRepoCommit(ctx context.Context, evt *atproto.SyncSubscribeRepos_Commit, validator *WordSegmentValidator, server, handle, apikey string) error {
 	rr, err := repo.ReadRepoFromCar(ctx, bytes.NewReader(evt.Blocks))
 	if err != nil {
 		slog.Error("Error reading repor", "error", err)
@@ -57,7 +59,7 @@ func handleRepoCommit(ctx context.Context, evt *atproto.SyncSubscribeRepos_Commi
 
 	for _, op := range evt.Ops {
 		if isCreateOrUpdate(op.Action) {
-			err := processRecord(ctx, *rr, evt, op, server, handle, apikey)
+			err := processRecord(ctx, *rr, evt, op, validator, server, handle, apikey)
 			if err != nil {
 				slog.Warn("Error processing record", "error", err)
 			}
@@ -71,7 +73,7 @@ func isCreateOrUpdate(action string) bool {
 	return ek == repomgr.EvtKindCreateRecord || ek == repomgr.EvtKindUpdateRecord
 }
 
-func processRecord(ctx context.Context, rr repo.Repo, evt *atproto.SyncSubscribeRepos_Commit, op *atproto.SyncSubscribeRepos_RepoOp, server, handle, apikey string) error {
+func processRecord(ctx context.Context, rr repo.Repo, evt *atproto.SyncSubscribeRepos_Commit, op *atproto.SyncSubscribeRepos_RepoOp, validator *WordSegmentValidator, server, handle, apikey string) error {
 	rc, rec, err := rr.GetRecord(ctx, op.Path)
 	if err != nil {
 		return fmt.Errorf("error getting record %s: %w", op.Path, err)
@@ -96,7 +98,7 @@ func processRecord(ctx context.Context, rr repo.Repo, evt *atproto.SyncSubscribe
 
 	if pst.LexiconTypeID == "app.bsky.feed.post" && len(pst.Langs) > 0 && pst.Langs[0] == "en" {
 		if len(pst.Text) > 6 {
-			if palindrome, ok := Palindrome(pst.Text); ok {
+			if palindrome, _, ok := Palindrome(validator, pst.Text); ok {
 				slog.Info("Palindrome found", "text", palindrome)
 
 				authorDID := evt.Repo
@@ -122,4 +124,21 @@ func processRecord(ctx context.Context, rr repo.Repo, evt *atproto.SyncSubscribe
 		}
 	}
 	return nil
+}
+
+// LoadDictionary loads words into a map for quick lookup
+func LoadDictionary(path string) (map[string]struct{}, error) {
+	words := make(map[string]struct{})
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		word := strings.ToLower(scanner.Text())
+		words[word] = struct{}{}
+	}
+	return words, scanner.Err()
 }

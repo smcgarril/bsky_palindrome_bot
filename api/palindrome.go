@@ -2,9 +2,19 @@ package api
 
 import (
 	"fmt"
-	"strings"
 	"unicode"
 )
+
+// Dictionary of valid words
+type WordSegmentValidator struct {
+	dictionary map[string]struct{}
+}
+
+func NewWordSegmentValidator(dictionary map[string]struct{}) *WordSegmentValidator {
+	return &WordSegmentValidator{
+		dictionary: dictionary,
+	}
+}
 
 func Palindrome(validator *WordSegmentValidator, s string) (string, []string, bool) {
 	var cleaned []rune
@@ -83,15 +93,13 @@ func Palindrome(validator *WordSegmentValidator, s string) (string, []string, bo
 		b--
 	}
 
-	// // Tokenize and check for valid words
+	// Tokenize and check for valid words
 	results, ok := validator.IsValidWordSegment(cleanedStr)
 	if !ok {
 		return "", nil, false
 	}
 
-	// if !canSegment(cleanedStr, dictionary) {
-	// 	return "", false
-	// }
+	fmt.Println(results)
 
 	return string(original), results, true
 }
@@ -163,99 +171,84 @@ func checkRepeats(s string) bool {
 	return false
 }
 
-// WordSegmentValidator contains a dictionary of valid words
-type WordSegmentValidator struct {
-	dictionary map[string]struct{}
-}
-
-// NewWordSegmentValidator creates a new validator with the given dictionary
-func NewWordSegmentValidator(dictionary map[string]struct{}) *WordSegmentValidator {
-	return &WordSegmentValidator{
-		dictionary: dictionary,
-	}
-}
-
-// // IsValidWordSegment checks if the input string can be segmented into valid dictionary words
-// func (v *WordSegmentValidator) IsValidWordSegment(s string) bool {
-// 	if len(s) == 0 {
-// 		return true
-// 	}
-
-// 	// dp[i] represents whether the substring s[0:i] can be segmented into valid words
-// 	dp := make([]bool, len(s)+1)
-// 	dp[0] = true
-
-// 	for i := 1; i <= len(s); i++ {
-// 		for j := 0; j < i; j++ {
-// 			if dp[j] {
-// 				if _, ok := v.dictionary[s[j:i]]; ok {
-// 					dp[i] = true
-// 					break
-// 				}
-// 			}
-// 		}
-// 	}
-
-// 	return dp[len(s)]
-// }
+// This is currently a problem because the dictionary we are loading considers most single letter characters to be
+// valid words
 
 // IsValidWordSegment returns true if there are valid word segmentations and all valid combinations.
 func (v *WordSegmentValidator) IsValidWordSegment(s string) ([]string, bool) {
 	var results []string
+	memo := make(map[string][]string)
 
-	// Backtracking function to explore valid segmentations.
-	var backtrack func(start int, path []string)
-	backtrack = func(start int, path []string) {
-		if start == len(s) {
-			// Only append if the entire string is segmented into valid words.
-			results = append(results, strings.Join(path, " "))
-			return
+	var dfs func(string) []string
+	dfs = func(sub string) []string {
+		if val, found := memo[sub]; found {
+			return val
+		}
+		if sub == "" {
+			return []string{""}
 		}
 
-		// Explore all possible substrings from the current start position.
-		for end := start + 1; end <= len(s); end++ {
-			word := s[start:end]
+		var segmentations []string
+		for i := 1; i <= len(sub); i++ {
+			word := sub[:i]
 			if _, exists := v.dictionary[word]; exists {
-				// If it's a valid word, continue exploring.
-				backtrack(end, append(path, word))
+				restSegmentations := dfs(sub[i:])
+				for _, seg := range restSegmentations {
+					if seg == "" {
+						segmentations = append(segmentations, word)
+					} else {
+						segmentations = append(segmentations, word+" "+seg)
+					}
+				}
 			}
 		}
+
+		memo[sub] = segmentations
+		return segmentations
 	}
 
-	// Start backtracking from the beginning of the string.
-	backtrack(0, []string{})
-
-	// Return true if at least one valid segmentation exists.
+	results = dfs(s)
 	return results, len(results) > 0
 }
 
-// CanSegment checks if the input string can be segmented into valid words
-func canSegment(input string, dictionary map[string]struct{}) bool {
-	n := len(input)
-	dp := make([]bool, n+1)
-	dp[0] = true
+// This works perfectly for current dictionary EXCEPT it will filter out valid single-letter words
+// like 'a' and 'I'
 
-	// fmt.Println(dictionary)
+// // IsValidWordSegment returns true if there are valid word segmentations and all valid combinations.
+// func (v *WordSegmentValidator) IsValidWordSegment(s string) ([]string, bool) {
+// 	var results []string
+// 	memo := make(map[string][]string)
 
-	for i := 1; i <= n; i++ {
-		for j := 0; j < i; j++ {
-			word := input[j:i]
+// 	var dfs func(string) []string
+// 	dfs = func(sub string) []string {
+// 		if val, found := memo[sub]; found {
+// 			return val
+// 		}
+// 		if sub == "" {
+// 			return []string{""}
+// 		}
 
-			// Only update if the prefix is valid and the current word is valid.
-			if dp[j] && isValidWord(word, dictionary) {
-				dp[i] = true
-				break
-			}
-		}
-	}
+// 		var segmentations []string
+// 		for i := 1; i <= len(sub); i++ {
+// 			word := sub[:i]
+// 			if len(word) > 1 { // Ensure single letters are invalid
+// 				if _, exists := v.dictionary[word]; exists {
+// 					restSegmentations := dfs(sub[i:])
+// 					for _, seg := range restSegmentations {
+// 						if seg == "" {
+// 							segmentations = append(segmentations, word)
+// 						} else {
+// 							segmentations = append(segmentations, word+" "+seg)
+// 						}
+// 					}
+// 				}
+// 			}
+// 		}
 
-	fmt.Println(dp)
-	return dp[n]
-}
+// 		memo[sub] = segmentations
+// 		return segmentations
+// 	}
 
-// isValidWord checks if a word exists in the dictionary
-func isValidWord(word string, dictionary map[string]struct{}) bool {
-	fmt.Println(word)
-	_, exists := dictionary[word]
-	return exists
-}
+// 	results = dfs(s)
+// 	return results, len(results) > 0
+// }

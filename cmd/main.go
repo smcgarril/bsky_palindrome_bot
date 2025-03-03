@@ -31,6 +31,15 @@ func main() {
 	apikey := os.Getenv("APIKEY")
 	handle := os.Getenv("HANDLE")
 
+	go func() {
+		http.HandleFunc("/health", server.HealthCheck)
+		slog.Info("Starting health check server on :8080")
+
+		if err := http.ListenAndServe(":8080", nil); err != nil {
+			log.Fatal("Failed to start health check server:", err)
+		}
+	}()
+
 	b := bot.NewBot(firehoseURL, blueskyServer, handle, apikey)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -49,15 +58,6 @@ func main() {
 		slog.Error("Error starting bot", "error", err)
 		os.Exit(1)
 	}
-
-	go func() {
-		http.HandleFunc("/health", server.HealthCheck)
-		slog.Info("Starting health check server on :8080")
-
-		if err := http.ListenAndServe(":8080", nil); err != nil {
-			log.Fatal("Failed to start health check server:", err)
-		}
-	}()
 
 	slog.Info("Application has stopped")
 }
